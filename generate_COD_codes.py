@@ -34,8 +34,6 @@ class CODTemp:
             e. last name   - (surname)
 
 
-    Note: Add selenium web driver to Env. variables.
-
     -----------------------------------
     File name   : generate_COD_codes.py
     Created by  : Saikumar Srigiriraju (ssrigiriraju@rocketsoftware.com)
@@ -200,10 +198,14 @@ class CODTemp:
     def generate_auth_res_deauth_codes(self, HMC, CEC, POOL_ID, POOL_TYPE, COD_USERNAME, COD_PASSWORD, COD_MAIL, COD_FN, COD_LN, COD_DEPT, COD_SN):
 
         # this will get the MTMS details for th egiven cec
+        print("Finding the mtms details for the given machine ...")
         self.get_mtms_details(hmc=HMC, system=CEC)
+        print(self.CEC_MTMS)
 
         # prepare sequence number
+        print("Preparing the sequence numbers ...")
         SN = self.arrange_sn(num=self.CEC_MTMS['sequence_num'])
+        print(SN)
 
         # generate authorization code
         if POOL_TYPE in self.POOL_TYPES:
@@ -212,6 +214,7 @@ class CODTemp:
             print("Invalid pool type given :-", POOL_TYPE)
             exit()
 
+        print("Generating the authorization code ...")
         ac = self.generate_authorization_code(name=COD_USERNAME, pwd=COD_PASSWORD, firstname=COD_FN,
                 lastname=COD_LN, mail=COD_MAIL, id=POOL_ID, pooltype=POOL_TYPE, ec=self.CEC_MTMS['entry_check'], sn=SN[0],
                             dep=COD_DEPT, serial_number=COD_SN)
@@ -219,13 +222,55 @@ class CODTemp:
         print(ac)
 
         # generate resource code
+        print("Generating the resource code ...")
         res = self.generate_resource_code(N=COD_USERNAME, P=COD_PASSWORD, F=COD_FN, L=COD_LN, M=COD_MAIL, S=SN[1], CPU='0100',
                 E='XX', MEMORY='0001', USER_DEPT=COD_DEPT, USER_SN=COD_SN)
         print(res)
 
         # generate deauth code
+        print("Generating the de-authorizaation code ...")
         dea = self.generate_deauth_code(NAME=COD_USERNAME, PASS=COD_PASSWORD, MAIL=COD_MAIL, FN=COD_FN, LN=COD_LN, TIME='Q030',
                 POOLID=POOL_ID, EC='XX', SERIALNUMBER=SN[2], COD_USER_DEPT=COD_DEPT,COD_USER_SN=COD_SN)
+        print(dea)
+
+    def generate_resource_code_only(self, HMC, CEC, POOL_ID, POOL_TYPE, COD_USERNAME, COD_PASSWORD, COD_MAIL, COD_FN, COD_LN, COD_DEPT, COD_SN):
+
+        # this will get the MTMS details for th egiven cec
+        print("Finding the mtms details for the given machine ...")
+        self.get_mtms_details(hmc=HMC, system=CEC)
+        print(self.CEC_MTMS)
+
+        print("Generating the resource code ...")
+        res = self.generate_resource_code(N=COD_USERNAME, P=COD_PASSWORD, F=COD_FN, L=COD_LN, M=COD_MAIL, S=self.CEC_MTMS['sequence_num'], CPU='0100',
+                                E='XX', MEMORY='0001', USER_DEPT=COD_DEPT, USER_SN=COD_SN)
+        print(res)
+
+    def generate_authorization_code_only(self, HMC, CEC, POOL_ID, POOL_TYPE, COD_USERNAME, COD_PASSWORD, COD_MAIL, COD_FN, COD_LN, COD_DEPT, COD_SN):
+
+        print("Finding the mtms details for the given machine ...")
+        self.get_mtms_details(hmc=HMC, system=CEC)
+        print(self.CEC_MTMS)
+
+        if POOL_TYPE in self.POOL_TYPES:
+                POOL_TYPE = self.POOL_TYPES[POOL_TYPE]
+        else:
+                print("Invalid pool type given :-", POOL_TYPE)
+                exit()
+
+        print("Generating the authorization code ...")
+        ac = self.generate_authorization_code(name=COD_USERNAME, pwd=COD_PASSWORD, firstname=COD_FN,lastname=COD_LN, mail=COD_MAIL, id=POOL_ID, pooltype=POOL_TYPE, ec=self.CEC_MTMS['entry_check'], sn=self.CEC_MTMS['sequence_num'],dep=COD_DEPT, serial_number=COD_SN)
+        print(ac)
+
+    def generate_deauth_code_only(self, HMC, CEC, POOL_ID, POOL_TYPE, COD_USERNAME, COD_PASSWORD, COD_MAIL, COD_FN, COD_LN, COD_DEPT, COD_SN):
+
+        print("Finding the mtms details for the given machine ...")
+        self.get_mtms_details(hmc=HMC, system=CEC)
+        print(self.CEC_MTMS)
+
+        # generate deauth code
+        print("Generating the de-authorizaation code ...")
+        dea = self.generate_deauth_code(NAME=COD_USERNAME, PASS=COD_PASSWORD, MAIL=COD_MAIL, FN=COD_FN, LN=COD_LN, TIME='Q030',
+                                    POOLID=POOL_ID, EC='XX', SERIALNUMBER=self.CEC_MTMS['sequence_num'], COD_USER_DEPT=COD_DEPT,COD_USER_SN=COD_SN)
         print(dea)
 
 
@@ -241,7 +286,6 @@ parser.add_argument('--lastname', required=True)
 parser.add_argument('--mail', required=True)
 parser.add_argument('--serialnumber', required=True)
 parser.add_argument('--dept', required=True)
-
 parser.add_argument('-a', action='store_true')
 parser.add_argument('-r', action='store_true')
 parser.add_argument('-d', action='store_true')
@@ -251,10 +295,10 @@ args = parser.parse_args()
 if args.all == True:
     CODTemp().generate_auth_res_deauth_codes(HMC=args.hmc, CEC=args.cec, POOL_ID=args.poolid, COD_USERNAME=args.username, COD_PASSWORD=args.password,COD_FN=args.firstname, COD_LN=args.lastname, COD_MAIL=args.mail, POOL_TYPE=args.pooltype, COD_DEPT=args.dept, COD_SN=args.serialnumber)
 elif args.r == True:
-    print("will generate only resource code")
+    CODTemp().generate_resource_code_only(HMC=args.hmc, CEC=args.cec, POOL_ID=args.poolid, COD_USERNAME=args.username, COD_PASSWORD=args.password,COD_FN=args.firstname, COD_LN=args.lastname, COD_MAIL=args.mail, POOL_TYPE=args.pooltype, COD_DEPT=args.dept, COD_SN=args.serialnumber)
 elif args.a == True:
-    print("will generate only authorization code")
+    CODTemp().generate_authorization_code_only(HMC=args.hmc, CEC=args.cec, POOL_ID=args.poolid, COD_USERNAME=args.username, COD_PASSWORD=args.password,COD_FN=args.firstname, COD_LN=args.lastname, COD_MAIL=args.mail, POOL_TYPE=args.pooltype, COD_DEPT=args.dept, COD_SN=args.serialnumber)
 elif args.d == True:
-    print("will generate only deauthorization code")
+    CODTemp().generate_deauth_code_only(HMC=args.hmc, CEC=args.cec, POOL_ID=args.poolid, COD_USERNAME=args.username, COD_PASSWORD=args.password,COD_FN=args.firstname, COD_LN=args.lastname, COD_MAIL=args.mail, POOL_TYPE=args.pooltype, COD_DEPT=args.dept, COD_SN=args.serialnumber)
 else:
     print("bad input given")
