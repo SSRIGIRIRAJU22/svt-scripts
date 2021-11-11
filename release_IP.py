@@ -9,14 +9,11 @@ def release_ip(IP, username, password, url):
     op = Options()
     op.add_argument("--allow-running-insecure-content")
     op.add_argument("--ignore-certificate-errors")
-    #op.add_argument("--headless")
+    op.add_argument("--headless")
     driver = webdriver.Chrome(options=op)
     driver.get(url_path)
     driver.maximize_window()
     time.sleep(5)
-
-    print(driver.title)
-    exit()
 
     driver.find_element_by_xpath("//*[@id=\"left-nav\"]/div/a[3]").click()
     time.sleep(4)
