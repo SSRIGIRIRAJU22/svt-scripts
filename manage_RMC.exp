@@ -1,0 +1,96 @@
+#!/usr/bin/expect  
+
+#######################################################
+#
+# thsi script will tries to bring the RMC of lpar 
+# to active state..
+#
+######################################################
+
+
+## Assigning positional parameters/arguments
+set HMCNAME [lindex $argv 0]
+set HOSTNAME [lindex $argv 1]
+set LPAR [lindex $argv 2]
+set PASSWORD [lindex $argv 3]
+set HMC_PASS abcd1234
+
+## Required commands to activate RMC
+set CHECKING_STATUS_OF_MANAGED_NODES "/usr/sbin/rsct/bin/rmcdomainstatus -s ctrmc"
+set CHECKING_RMC_STATUS "lssrc -a | grep rsct"
+set STOP_RMC_DAEMONS "/usr/sbin/rsct/bin/rmcctrl -z"
+set ADD_ENTRY_INITTAB_START_DAEMONS "/usr/sbin/rsct/bin/rmcctrl -A"	 
+set ENABLES_DAEMONS_FOR_REMOTE_CLIENT_CONNECTION "/usr/sbin/rsct/bin/rmcctrl -p" 
+set RECRATE_RMC_CONFIGURATION "/usr/sbin/rsct/install/bin/recfgct"
+
+## list of elements 
+set list_items [list $STOP_RMC_DAEMONS $ADD_ENTRY_INITTAB_START_DAEMONS $ENABLES_DAEMONS_FOR_REMOTE_CLIENT_CONNECTION $RECRATE_RMC_CONFIGURATION]
+
+
+## validating parameters passed to script
+if {[llength $argv] != 4} {
+    send_user "\n"
+    send_user "######################### Results Starts Here ###########################\n\n"
+    send_user "Usage: Scriptname HMC HOSTNAME LPAR LPAR_PASS\n\n"
+    send_user "########################## Results Ends Here ############################\n\n"
+    exit 1
+}
+
+
+## function
+proc try_bringing_RMC {RMC_COMMANDS} {
+    global RECRATE_RMC_CONFIGURATION
+    expect {
+        "# " {send "$RMC_COMMANDS\r"}
+    }
+    if {$RMC_COMMANDS == $RECRATE_RMC_CONFIGURATION} {
+        sleep 60
+    } else {sleep 10}
+}
+
+## starting the process
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null hscpe@$HMCNAME
+
+expect { 
+    "Password:" {send "$HMC_PASS\r"}
+    timeout {puts "\n\n################# Results Starts Here #################\n\nTimeOut.. While waiting for Login prompts. for $HMCNAME lpar..\n\n################## Results Ends Here ##################"; exit 1}
+}
+
+expect {
+     "$ " {send "rmvterm -m $HOSTNAME -p $LPAR\r"}
+}
+expect {
+    "not found" {puts "\n\nHost/Lpar not found...\n\n"; exit 1}
+}
+
+expect {
+     "$ " {send "mkvterm -m $HOSTNAME -p $LPAR\r"}
+}
+
+#expect {
+#     "Open Completed." {send "\r"}
+#}
+
+expect {
+     "not found" {puts "\n\nHost/Lpar not found...\n\n"; exit 1} 
+}
+
+expect {
+    "Console login:" {send "root\r"}
+    timeout {puts "\n\n################# Results Starts Here #################\n\nTimeOut.. While waiting for Login prompts. for $LPAR lpar..\n\n################## Results Ends Here ##################"; exit 1}
+}
+
+expect {
+     "root's Password:" {send "$PASSWORD\r"; exp_continue}
+     "invalid login name or password" {puts "\n\nInvalid UserName or password..\n"; exit 1}
+}
+
+
+## foreach loop to iterate elements one by one
+foreach i $list_items {
+    set RMC_COMMANDS $i 
+    try_bringing_RMC $RMC_COMMANDS
+}
+
+## exit with status zero
+exit 0
