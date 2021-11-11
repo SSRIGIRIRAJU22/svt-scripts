@@ -1,0 +1,92 @@
+#!/usr/bin/expect
+
+#------------------------------------------------------------
+#
+# *** this script is to update the password for the lpar ***
+#
+# Created On :- 18/July/2021
+# Created by :- Saikumar Srigiriraju
+#
+#
+#------------------------------------------------------------
+
+## parameters/arguments declaration
+set HMC [lindex $argv 0]
+set HMC_PASS [lindex $argv 1]
+set HOSTNAME [lindex $argv 2]
+set LPAR_NAME [lindex $argv 3]
+set LPAR_OLD_PASS [lindex $argv 4]
+set LPAR_NEW_PASS [lindex $argv 5]
+set count 0
+set ECHO [exec date +%Y%m%d%I%M%S:]
+log_user 0
+
+
+if {[llength $argv] != 6} {
+    send_user "\n"
+    send_user "########################## Results Starts Here ############################\n\n"
+    send_user "Usage: Scriptname HMC HMC_PASS HOSTNAME LPAR_NAME LPAR_OLD_PASS LPAR_NEW_PASS\n\n"
+    send_user "########################### Results Ends Here #############################\n\n"
+    exit 1
+}
+
+
+set result [exec ping -c1 $HMC]
+if {[string match "100%" $result]} {
+    puts "$HMC not found..";
+    exit 1
+}
+
+puts -nonewline "\n$ECHO Password update for $LPAR_NAME ..."
+################################################################################
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=quiet hscpe@$HMC
+
+expect {
+    "Password:" { send "$HMC_PASS\r"; exp_continue }
+    "Password:" {puts " FAIL\nInvalid Password...While connecting to $HMC"; exit 1}
+}
+
+
+#log_user 0
+expect {
+    "$ " {send "rmvterm -m $HOSTNAME -p $LPAR_NAME\r"}
+    "*not found*" {puts " FAIL\nInvalid Host or Lpar."; exit 1}
+}
+
+sleep 10
+
+#log_user 1
+expect {
+    "$ " {send "mkvterm -m $HOSTNAME -p $LPAR_NAME\r"}
+    "*not found*" {puts " FAIL\nInvalid Host:- $HOSTNAME or Lpar:- $LPAR_NAME\n"; exit 1}
+}
+
+sleep 10
+
+expect {
+    -re "Console login:" { send "root\r"}
+    timeout {puts " FAIL\nTime Out..While waiting for Login terminal for $LPAR_NAME lpar.\n"; exit 1}
+}
+
+expect {
+    -re "root's Password:" { send "$LPAR_OLD_PASS\r"; incr count; exp_continue}
+    -re "You entered an invalid login name or password." {puts " FAIL\nInvalid Password.. Login failed for $LPAR_NAME lpar.\n"; exit 1}
+}
+
+expect {
+    -re "root's New password:" { send "$LPAR_NEW_PASS\r"; incr count; exp_continue}
+}
+
+expect {
+    -re "Enter the new password again:" { send "$LPAR_NEW_PASS\r"; incr count; exp_continue}
+}
+
+if {$count == 3} {
+    expect "root @ $LPAR_NAME:"
+    send "exit\r"
+    puts " SUCCESS"
+    exit 0
+}
+
+puts " FAIL"
+exit 1
