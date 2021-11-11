@@ -1,0 +1,101 @@
+#!/usr/bin/expect -f
+
+#--------------------------------------------------------------
+#
+# *** This script will try booting the lpar from disk ***
+#
+# Created on :- 10/Mar/2021
+# Created by :- Saikumar Srigiriraju
+#------------------------------------------------------------
+
+
+set HMC [lindex $argv 0]
+set HMC_USER [lindex $argv 1]
+set HMC_PASS [lindex $argv 2]
+set HOSTNAME [lindex $argv 3]
+set LPAR [lindex $argv 4]
+
+
+if {[llength $argv] != 5} {
+    send_user "\nUsage:\n\t./lpar_boot.exp <HMC hostname | IP> <HMC user> <HMC pass> <CEC> <LPAR>\n"
+    exit 1
+}
+
+# this will start the process
+spawn ssh -o StrictHostKeyChecking=no $HMC_USER@$HMC
+
+expect {
+    "Password:" {send "$HMC_PASS\r"}
+}
+
+expect {
+    "$ " {send "chsysstate -r lpar -o on -f default_profile -m $HOSTNAME -b sms -n $LPAR\r"}
+    "not found" {pust "\n\nHost or lpar not found..!\n"; exit 1}
+}
+
+sleep 2
+
+expect {
+    "$ " {send "mkvterm -m $HOSTNAME -p $LPAR\r"}
+    "not found" {puts "\n\nHost or lpar not found..!\n"; exit 1}
+}
+
+sleep 2
+expect {
+    #select Boot Options
+    -re "Type menu item number and press Enter or select Navigation key:" {send "5\r"}
+}
+
+sleep 1
+expect {
+    #Select Install/Boot Device
+    -re "Type menu item number and press Enter or select Navigation key:" {send "1\r"}
+}
+
+sleep 1
+expect {
+    #Hard Drive
+    -re "Type menu item number and press Enter or select Navigation key:" {send "3\r"}
+}
+
+sleep 1
+expect {
+    #SCSI
+    -re "Type menu item number and press Enter or select Navigation key:" {send "1\r"}
+}
+
+sleep 1
+expect {
+    #select media adapter
+    -re "Type menu item number and press Enter or select Navigation key:" {send "1\r"}
+}
+expect {
+    -re "not detected" {puts "\n########## Results Starts Here ##########\n\nBoot device not found\n########## Results Ends Here ##########"; exit 1}
+}
+
+sleep 1
+expect {
+    #select disk
+    -re "Type menu item number and press Enter or select Navigation key:" {send "1\r"}
+}
+
+sleep 1
+expect {
+    #normal boot mode
+    -re "Type menu item number and press Enter or select Navigation key:" {send "2\r"}
+
+}
+
+sleep 1
+expect {
+    #exit SMS service
+    -re "Type menu item number and press Enter or select Navigation key:" {send "1\r"}
+}
+
+# no time out
+set timeout -1
+
+expect {
+    "boot terminated" {exit 1}
+    "Console login:" {puts "\n\nBoot completed Successfully for ... $LPAR\n"; exit 0}
+}
