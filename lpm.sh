@@ -26,7 +26,7 @@ TARGETCEC=""
 HMCUSER="hscpe"
 HMCPASS="abcd1234"
 ITERATIONS=1
-WAITTIME=""
+WAITTIME="1m"
 REMOTEMIGRATION="NO"
 MYCOUNT=0
 
@@ -48,7 +48,7 @@ ECHO () {
         echo -e "$(date '+%Y%m%d%H%M%S'): $*"
 }
 
-TEMP=`getopt -o "l:i:hw:r:" -l "waittime:,iterations:,help,sourcehmc:,targethmc:,lpar:,sourcecec:,targetcec:,remotemigration:" -n $0 -- "$@"` || {
+TEMP=`getopt -o "l:i:hw:r:u:p:" -l "hmcuser:,hmcpass:,waittime:,iterations:,help,sourcehmc:,targethmc:,lpar:,sourcecec:,targetcec:,remotemigration:" -n $0 -- "$@"` || {
         echo ""
         exit 1
 }
@@ -62,6 +62,14 @@ do
 
         -r | --remotemigration)
                         REMOTEMIGRATION=$2;
+                        shift 2
+                                            ;;
+        -u | --hmcuser)
+                        HMCUSER=$2;
+                        shift 2
+                                            ;;
+        -p | --hmcpass)
+                        HMCPASS=$2;
                         shift 2
                                             ;;
         --sourcehmc)
@@ -103,10 +111,14 @@ do
 done
 
 ## validating the passed options and its values.
-[[ "$LPAR" == "" ]] && echo -e "\nOption: --lpar is missing.\n" && usage && exit 1
+[[ "$LPAR" == "" ]] && echo -e "\nOption: -l is missing.\n" && usage && exit 1
+[[ "$HMCUSER" == "" ]] && echo -e "\nOption: -u is missing.\n" && usage && exit 1
+[[ "$HMCPASS" == "" ]] && echo -e "\nOption: -p is missing.\n" && usage && exit 1
+[[ "$WAITTIME" == "" ]] && echo -e "\nOption: -w is missing.\n" && usage && exit 1
 [[ "$SOURCEHMC" == "" ]] && echo -e "\nOption: --sourcehmc is missing.\n" && usage && exit 1
 [[ "$SOURCECEC" == "" ]] && echo -e "\nOption: --sourcecec is missing.\n" && usage && exit 1
 [[ "$TARGETCEC" == "" ]] && echo -e "\nOption: --targetcec is missing.\n" && usage && exit 1
+
 if [[ $( echo $REMOTEMIGRATION | tr '[:lower:]' '[:upper:]') == 'YES' ]] && [[ "$TARGETHMC" == "" ]]
 then
         echo -e "\nOption: --targethmc is missing.\n"
@@ -114,6 +126,14 @@ then
         exit 1
 fi
 
+## remote hmc migration function
+remote_hmc_migration () {
+    echo "remote migration function "
+}
+
+
+
+## same hmc migration function
 same_hmc_migration () {
 
     # Validating the migration
@@ -199,8 +219,8 @@ else
                     # sleep time
                     if [[ ${MYCOUNT} -ne ${ITERATIONS} ]]
                     then
-                            ECHO "Sleeping 30 seconds ... \c"
-                            sleep 30
+                            ECHO "Sleeping $WAITTIME ... \c"
+                            sleep $WAITTIME
                             echo -e "${GREEN}Passed${EC}"
                     fi
             else
