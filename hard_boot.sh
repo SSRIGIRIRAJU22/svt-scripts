@@ -33,15 +33,15 @@ usage () {
     echo -e "\t-u : HMC user name. ${WHITE}Default: hscpe${EC}"
     echo -e "\t-p : HMC user password. ${WHITE}Default: abcd1234${EC}"
     echo -e "\t-m : Power system host name or IP."
-        echo -e "\t-U : LPAR user name. ${WHITE}Default: root${EC}"
-        echo -e "\t-P : LPAR user password."
+    echo -e "\t-U : LPAR user name. ${WHITE}Default: root${EC}"
+    echo -e "\t-P : LPAR user password."
     echo -e "\t-t : Time in hours. How long hard boot should run. ${WHITE}Default: ${TIME::-1} hours${EC}"
     echo -e "    --help : help.\n"
     echo -e "${UNDERLINE}Optional Parameters:${EC}"
     echo -e "\n\t[-u] [-p] [-U] [-t]\n"
-        echo -e "${UNDERLINE}Example:${EC}"
-        echo -e "\n\t$0 -h 192.12.133.5 -u hscpe -p abcd1234 -m zepp20fp -t 5h -U root -P Th3resyerproblem! \n"
-        echo -e "Contact:- ${WHITE}Saikumar Srigiriraju (ssrigiriraju@rocketsoftware.com)${EC}"
+    echo -e "${UNDERLINE}Example:${EC}"
+    echo -e "\n\t$0 -h 192.12.133.5 -u hscpe -p abcd1234 -m zepp20fp -t 5h -U root -P Th3resyerproblem! \n"
+    echo -e "Contact:- ${WHITE}Saikumar Srigiriraju (ssrigiriraju@rocketsoftware.com)${EC}"
 }
 
 
