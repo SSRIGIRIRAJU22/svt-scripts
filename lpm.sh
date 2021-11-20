@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-#-----------------------------------------------------------------------
+#---------------------------------------------------------------------------
 #
-# *** Script to perform LPM - live partition mobility ***
+# *** Script to perform LPM - live partition mobility for given LPAR. ***
 #
 #
 # File Name  :- lpm.sh
@@ -9,7 +9,7 @@
 #
 #
 # Created by :- Saikumar Srigiriraju (ssrigiriraju@rocketsoftware.com)
-#----------------------------------------------------------------------
+#--------------------------------------------------------------------------
 
 
 LPAR=""
@@ -17,31 +17,45 @@ SOURCEHMC=""
 TARGETHMC=""
 SOURCECEC=""
 TARGETCEC=""
+MYCOUNT=0
 HMCUSER="hscpe"
 HMCPASS="abcd1234"
 ITERATIONS=1
 WAITTIME="1m"
-REMOTEMIGRATION="NO"
-MYCOUNT=0
 WHITE='\e[97m'
 EC='\033[0m'
 BLUE='\033[94m'
 RED='\033[91m'
 GREEN='\033[92m'
 UNDERLINE='\033[4m'
+REMOTEMIGRATION="NO"
 
-
+# usage function.
 usage () {
-        echo -e "Options:-\n"
-        echo -e "-l,  --lpar,            LPM lpar hostname or IP."
-        echo -e "-?,  --sourcehmc        source HMC hostname or IP."
-        echo -e "-?,  --targethmc        target HMC hostname or IP."
-        echo -e "-?,  --sourcecec        source CEC hostname or IP."
-        echo -e "-?,  --targetcec        target CEC hostname or IP."
-        echo -e "-w,  --waittime         after every LPM operation"
-        echo -e "-i,  --iterations"
-        echo -e "-r,  --remotemigration"
+    echo -e "${UNDERLINE}Usage:${EC}"
+    echo -e "\n$0 [-l <LPAR>] [--sourcecec <hostname|IP>] [--targetcec <hostname|IP>] [--sourcehmc <hostname|IP>] [--targethmc <hostname|IP>] [-i] [-w] [-u] [-p] [-r] [-h]\n"
+    echo -e "${UNDERLINE}Supported Options:${EC}\n"
+    echo -e "\t-l, --lpar            : Provide LPM LPAR hostname|IP."
+    echo -e "\t-i, --iterations      : Number of LPM operation."
+    echo -e "\t-w, --waittime        : Wait time b/w every LPM operation."
+    echo -e "\t-u, --hmcuser         : Provide HMC user name."
+    echo -e "\t-p, --hmcpass         : Provide HMC user password."
+    echo -e "\t-r, --remotemigration : Remote HMC migration."
+    echo -e "\t--sourcecec           : Provide source CEC hostname|IP."
+    echo -e "\t--sourcehmc           : Provide source HMC hostname|IP."
+    echo -e "\t--targetcec           : Provide target CEC hostname|IP."
+    echo -e "\t--targethmc           : Provide target HMC hostname|IP."
+    echo -e "${UNDERLINE}Example:${EC}"
+    echo -e "\n\t$0 -l d152a-lpm-lpar1 --sourcecec d152a --targetcec d120a --sourcehmc 9.3.147.165\n"
+    echo -e "Contact:- ${WHITE}Saikumar Srigiriraju (ssrigiriraju@rocketsoftware.com)${EC}"
 }
+
+
+synopsis () {
+    echo -e "\n${UNDERLINE}Synopsis:${EC}\n"
+    echo -e "\tThis script will perform the hard boot on the given system."
+}
+
 
 ECHO () {
 
@@ -49,7 +63,7 @@ ECHO () {
 }
 
 TEMP=`getopt -o "l:i:hw:ru:p:" -l "hmcuser:,hmcpass:,waittime:,iterations:,help,sourcehmc:,targethmc:,lpar:,sourcecec:,targetcec:,remotemigration" -n $0 -- "$@"` || {
-        echo ""
+        echo ""; usage
         exit 1
 }
 
@@ -91,6 +105,12 @@ do
         -l | --lpar)
                         LPAR=$2;
                         shift 2
+                                            ;;
+        -h | --help)
+                        shift 1;
+                        echo ""
+                        usage
+                        exit 0
                                             ;;
         -i | --iterations)
                         ITERATIONS=$2;
