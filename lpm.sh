@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #-----------------------------------------------------------------------
 #
-# *** This tool will perform LPM for the given lpar ***
+# *** Script to perform LPM - live partition mobility ***
 #
 #
 # File Name  :- lpm.sh
@@ -12,12 +12,6 @@
 #----------------------------------------------------------------------
 
 
-WHITE='\e[97m'
-EC='\033[0m'
-BLUE='\033[94m'
-RED='\033[91m'
-GREEN='\033[92m'
-UNDERLINE='\033[4m'
 LPAR=""
 SOURCEHMC=""
 TARGETHMC=""
@@ -29,6 +23,12 @@ ITERATIONS=1
 WAITTIME="1m"
 REMOTEMIGRATION="NO"
 MYCOUNT=0
+WHITE='\e[97m'
+EC='\033[0m'
+BLUE='\033[94m'
+RED='\033[91m'
+GREEN='\033[92m'
+UNDERLINE='\033[4m'
 
 
 usage () {
@@ -40,7 +40,7 @@ usage () {
         echo -e "-?,  --targetcec        target CEC hostname or IP."
         echo -e "-w,  --waittime         after every LPM operation"
         echo -e "-i,  --iterations"
-        echo -e "-r,  --remotemigration  yes or no"
+        echo -e "-r,  --remotemigration"
 }
 
 ECHO () {
@@ -48,7 +48,7 @@ ECHO () {
         echo -e "$(date '+%Y%m%d%H%M%S'): $*"
 }
 
-TEMP=`getopt -o "l:i:hw:r:u:p:" -l "hmcuser:,hmcpass:,waittime:,iterations:,help,sourcehmc:,targethmc:,lpar:,sourcecec:,targetcec:,remotemigration:" -n $0 -- "$@"` || {
+TEMP=`getopt -o "l:i:hw:ru:p:" -l "hmcuser:,hmcpass:,waittime:,iterations:,help,sourcehmc:,targethmc:,lpar:,sourcecec:,targetcec:,remotemigration" -n $0 -- "$@"` || {
         echo ""
         exit 1
 }
@@ -61,8 +61,8 @@ do
     case "$1" in
 
         -r | --remotemigration)
-                        REMOTEMIGRATION=$2;
-                        shift 2
+                        REMOTEMIGRATION="YES"
+                        shift 1
                                             ;;
         -u | --hmcuser)
                         HMCUSER=$2;
@@ -119,45 +119,49 @@ done
 [[ "$SOURCECEC" == "" ]] && echo -e "\nOption: --sourcecec is missing.\n" && usage && exit 1
 [[ "$TARGETCEC" == "" ]] && echo -e "\nOption: --targetcec is missing.\n" && usage && exit 1
 
-if [[ $( echo $REMOTEMIGRATION | tr '[:lower:]' '[:upper:]') == 'YES' ]] && [[ "$TARGETHMC" == "" ]]
+if [[ -n "${SOURCEHMC}" ]] && [[ -n "${TARGETHMC}" ]] && [[ "${REMOTEMIGRATION}" == "NO" ]]
+then
+        echo -e "\nOption: -r is missing.\n"
+        usage
+        exit 1
+fi
+
+if [[ -n "${SOURCEHMC}" ]] && [[ "${REMOTEMIGRATION}" == "YES" ]] && [[ "$TARGETHMC" == "" ]]
 then
         echo -e "\nOption: --targethmc is missing.\n"
         usage
         exit 1
 fi
 
-## remote hmc migration function
-remote_hmc_migration () {
-    echo "remote migration function "
-}
 
+migrate_lpar () {
 
-
-## same hmc migration function
-same_hmc_migration () {
+#--------------------------------------------
+# migrate lpar from source to destination
+#--------------------------------------------
 
     # Validating the migration
     ECHO "Validating the migration ... \c"
-    VM=$(sshpass -p ${HMCPASS} ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${HMCUSER}@${SOURCEHMC} "migrlpar -m ${SOURCECEC} -t ${TARGETCEC} -o v -p ${LPAR} --ip ${SOURCEHMC} -u ${HMCUSER}")
+    VM=$(sshpass -p ${HMCPASS} ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${HMCUSER}@${SOURCEHMC} "migrlpar -m ${SOURCECEC} -t $2 -o v -p ${LPAR} --ip $1 -u ${HMCUSER}")
     if [[ $? -eq 0 ]]
     then
             echo -e "${GREEN}Passed${EC}"
 
-                # migrating the partition from source to destination
-            ECHO "Migrating ${BLUE}${LPAR}${EC} from ${WHITE}${SOURCECEC}${EC} to ${WHITE}${TARGETCEC}${EC} ... \c"
-            MR=$(sshpass -p ${HMCPASS} ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${HMCUSER}@${SOURCEHMC} "migrlpar -m ${SOURCECEC} -t ${TARGETCEC} -o m -p ${LPAR} --ip ${SOURCEHMC} -u ${HMCUSER}")
+            # migrating the partition from source to destination
+            ECHO "Migrating ${BLUE}${LPAR}${EC} from ${WHITE}${SOURCECEC}${EC} to ${WHITE}$2${EC} ... \c"
+            MR=$(sshpass -p ${HMCPASS} ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${HMCUSER}@${SOURCEHMC} "migrlpar -m ${SOURCECEC} -t $2 -o m -p ${LPAR} --ip $1 -u ${HMCUSER}")
 
             if [[ $? -eq 0 ]]
             then
                     echo -e "${GREEN}Passed${EC}"
-                    ECHO "Post migration discovering lpar in ${WHITE}${TARGETCEC}${EC} ... \c"
-                    GETLPARNAME=$(sshpass -p ${HMCPASS} ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${HMCUSER}@${SOURCEHMC} "lssyscfg -r lpar -m ${TARGETCEC} -F name --filter \"lpar_names=${LPAR}\"")
+                    ECHO "Post migration discovering lpar in ${WHITE}$2${EC} ... \c"
+                    GETLPARNAME=$(sshpass -p ${HMCPASS} ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${HMCUSER}@$1 "lssyscfg -r lpar -m $2 -F name --filter \"lpar_names=${LPAR}\"")
                     if [[ $? -eq 0 ]]
                     then
                             echo -e "${BLUE}${GETLPARNAME}${EC}"
 
                             ECHO "Post migration rmc status of lpar in destination ... \c"
-                            GETRMCSTATUS=$(sshpass -p ${HMCPASS} ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${HMCUSER}@${SOURCEHMC} "lssyscfg -r lpar -m ${TARGETCEC} -F rmc_state --filter \"lpar_names=${LPAR}\"")
+                            GETRMCSTATUS=$(sshpass -p ${HMCPASS} ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${HMCUSER}@$1 "lssyscfg -r lpar -m $2 -F rmc_state --filter \"lpar_names=${LPAR}\"")
                             if [[ $? -eq 0 ]]
                             then
                                     echo -e "${BLUE}${GETRMCSTATUS}${EC}"
@@ -193,8 +197,9 @@ else
 fi
 
 
-if [[ $(echo $REMOTEMIGRATION | tr '[:lower:]' '[:upper:]') == "YES" ]]
+if [[ "$REMOTEMIGRATION"  == "YES" ]]
 then
+
         ECHO "Validating HMC IP: ${BLUE}${TARGETHMC}${EC} ... \c"
         ping -c3 ${TARGETHMC} > /dev/null 2>&1
         if [[ $? -ne 0 ]]
@@ -205,12 +210,95 @@ then
         else
                 echo -e "${GREEN}Passed${EC}"
         fi
+
+
+        AUTHCOUNT=0
+        IS_AUTH_COMMAND_EXECUTED=0
+                ECHO "Doing mkauthkeys between two HMC's ... \c"
+        STMKA=$(sshpass -p ${HMCPASS} ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${HMCUSER}@${SOURCEHMC} "mkauthkeys --ip ${TARGETHMC} -u ${HMCUSER} --test")
+        if [[ $? -ne 0 ]]
+        then
+                                SOURCEAUTH=$(sshpass -p ${HMCPASS} ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${HMCUSER}@${SOURCEHMC} "mkauthkeys --ip ${TARGETHMC} -u ${HMCUSER} --passwd ${HMCPASS}")
+                                if [[ $? -eq 0 ]]
+                                then
+                                                ((AUTHCOUNT++))
+                        ((IS_AUTH_COMMAND_EXECUTED++))
+                                else
+                                                echo -e "${RED}Failed"
+                        echo -e "${SOURCEAUTH}${EC}"
+                        exit 1
+                                fi
+                else
+                                ((AUTHCOUNT++))
+                fi
+
+                TTMKA=$(sshpass -p ${HMCPASS} ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${HMCUSER}@${TARGETHMC} "mkauthkeys --ip ${SOURCEHMC} -u ${HMCUSER} --test")
+                if [[ $? -ne 0 ]]
+                then
+                                TARGETAUTH=$(sshpass -p ${HMCPASS} ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${HMCUSER}@${TARGETHMC} "mkauthkeys --ip ${SOURCEHMC} -u ${HMCUSER} --passwd ${HMCPASS}")
+                                if [[ $? -eq 0 ]]
+                                then
+                                                ((AUTHCOUNT++))
+                        ((IS_AUTH_COMMAND_EXECUTED++))
+                                else
+                                                echo -e "${RED}Failed"
+                        echo -e "${TARGETAUTH}${EC}"
+                        exit 1
+                                fi
+                else
+                                ((AUTHCOUNT++))
+                fi
+
+                if [[ "${AUTHCOUNT}" -eq 2 ]]
+                then
+                                echo -e "${GREEN}Passed${EC}"
+                if [[ "${IS_AUTH_COMMAND_EXECUTED}" -gt 0 ]]
+                then
+                                        ECHO "Sleeping 1 minute ... \c"
+                        sleep 1m
+                        echo -e "${GREEN}Passed${EC}"
+                fi
+
+                else
+                                echo -e "${RED}Failed${EC}"
+                echo -e "Failure:- mkauthkeys did not happend properly."
+                exit 1
+                fi
+
+        while true
+        do
+                if [[ ${MYCOUNT} -ne ${ITERATIONS} ]]
+                then
+                        ## calling the remote HMC migration function
+                        migrate_lpar ${TARGETHMC} ${TARGETCEC}
+
+                        TEMP_ONE=${SOURCEHMC}
+                        SOURCEHMC=${TARGETHMC}
+                        TARGETHMC=${TEMP_ONE}
+                        TEMP_TWO=${SOURCECEC}
+                        SOURCECEC=${TARGETCEC}
+                        TARGETCEC=${TEMP_TWO}
+                        ((MYCOUNT++))
+
+                        # sleep time
+                        if [[ ${MYCOUNT} -ne ${ITERATIONS} ]]
+                        then
+                                ECHO "Sleeping $WAITTIME ... \c"
+                                sleep $WAITTIME
+                                echo -e "${GREEN}Passed${EC}"
+                        fi
+                else
+                        break
+                fi
+        done
 else
+
     while true
     do
             if [[ ${MYCOUNT} -ne ${ITERATIONS} ]]
             then
-                    same_hmc_migration
+                    migrate_lpar ${SOURCEHMC} ${TARGETCEC}
+
                     TEMP=${SOURCECEC}
                     SOURCECEC=${TARGETCEC}
                     TARGETCEC=${TEMP}
@@ -224,8 +312,10 @@ else
                             echo -e "${GREEN}Passed${EC}"
                     fi
             else
-                    ECHO "Finished."
-                    exit 0
+                    break
             fi
     done
 fi
+
+ECHO "Finished."
+exit 0
