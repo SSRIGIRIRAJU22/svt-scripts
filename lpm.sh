@@ -38,6 +38,7 @@ usage () {
     echo -e "\t-l, --lpar            : Provide LPM LPAR hostname|IP."
     echo -e "\t-i, --iterations      : Number of LPM operation. ${WHITE}Default: 1${EC}"
     echo -e "\t-w, --waittime        : Wait time b/w every LPM operation. ${WHITE}Default: 1m${EC}"
+    echo -e "\t\t\t\thow to parse the waittime ?, see below examples.\n\t\t\t\tEg:- 10s or 10m or 1h or 1d"
     echo -e "\t-u, --hmcuser         : Provide HMC user name. ${WHITE}Default: hscpe${EC}"
     echo -e "\t-p, --hmcpass         : Provide HMC user password. ${WHITE}Default: abcd1234${EC}"
     echo -e "\t-r, --remotemigration : Remote HMC migration."
@@ -55,7 +56,7 @@ usage () {
 
 synopsis () {
     echo -e "\n${UNDERLINE}Synopsis:${EC}\n"
-    echo -e "\tThis script will perform the hard boot on the given system."
+    echo -e "\tThis script will perform the LPM operation for the given lpar from source to destination and vice versa."
 }
 
 
@@ -111,6 +112,7 @@ do
         -h | --help)
                         shift 1;
                         echo ""
+                        synopsis
                         usage
                         exit 0
                                             ;;
