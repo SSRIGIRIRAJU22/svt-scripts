@@ -102,6 +102,13 @@ do
     esac
 done
 
+if [[ "$#" -ne 0 ]]
+then
+        echo ""
+        usage
+        exit 1
+fi
+
 [[ "$MACHINE" == "" ]] && echo -e "\nOption: -m is missing.\n" && usage && exit 1
 [[ "$USER" == "" ]] && echo -e "\nOption: -u is missing.\n" && usage && exit 1
 [[ "$PASSWORD" == "" ]] && echo -e "\nOption: -p is missing.\n" && usage && exit 1
