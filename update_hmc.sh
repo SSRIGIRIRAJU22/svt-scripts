@@ -248,6 +248,13 @@ do
         esac
 done
 
+if [[ "$#" -ne 0 ]]
+then
+        echo ""
+        usage
+        exit 1
+fi
+
 [[ "$HMC" == "" ]] && echo -e "\nOption: -h is missing.\n" && usage && exit 1
 [[ "$BUILD" == "" ]] && echo -e "\nOption: -b is missing.\n" && usage && exit 1
 [[ "$HMC_USER" == "" ]] && echo -e "\nOption: -u is missing.\n" && usage && exit 1
