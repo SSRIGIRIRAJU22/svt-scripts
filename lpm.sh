@@ -134,6 +134,13 @@ do
     esac
 done
 
+if [[ "$#" -ne 0 ]]
+then
+        echo ""
+        usage
+        exit 1
+fi
+
 ## validating the passed options and its values.
 [[ "$LPAR" == "" ]] && echo -e "\nOption: -l is missing.\n" && usage && exit 1
 [[ "$HMCUSER" == "" ]] && echo -e "\nOption: -u is missing.\n" && usage && exit 1
