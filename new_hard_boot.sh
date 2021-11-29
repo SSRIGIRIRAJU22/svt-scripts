@@ -37,7 +37,7 @@ usage () {
     echo -e "\t-i : Iterations."
     echo -e "    --help : help.\n"
     echo -e "${UNDERLINE}Optional Parameters:${EC}"
-    echo -e "\n\t[-u] [-p] [-U] [-t]\n"
+    echo -e "\n\t[-u] [-p] [-U] [-i]\n"
     echo -e "${UNDERLINE}Example:${EC}"
     echo -e "\n\t$0 -h 192.12.133.5 -u hscpe -p abcd1234 -m zepp20fp -i 10 -U root -P Th3resyerproblem! \n"
     echo -e "Contact:- ${WHITE}Saikumar Srigiriraju (ssrigiriraju@rocketsoftware.com)${EC}"
@@ -301,22 +301,28 @@ LPARS_CORRECT_PASSWORD=()
 FETCH_LPARS=$(sshpass -p $HMCPASS ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${HMCUSER}@${HMC} "lssyscfg -r lpar -F name,state -m $MACHINE | grep \"Running\" | grep -iv \"vios\" | cut -d',' -f1")
 if [[ $? -eq 0 ]]
 then
-                if [[ -n $FETCH_LPARS ]]
-                then
-                        for E in $FETCH_LPARS
-                        do
-                                timeout 2m sshpass -p "$LPARPASS" ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${LPARUSER}@${E} "hcl -status" > /dev/null
-                                if [[ $? -eq 255 ]]
-                                then
-                                        LPARS_CORRECT_PASSWORD=($E "${LPARS_CORRECT_PASSWORD[@]}")
-                                else
-                                        sshpass -p "$HMCPASS" ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${HMCUSER}@${HMC} "chsysstate -m $MACHINE -r lpar -o shutdown -n $E --immed --force" > /dev/null
-                                fi
-                        done
-                else
-                        echo -e "Failure Analysis:- Could not able to get the LPARS information."
-                        exit 1
-                fi
+        if [[ -n $FETCH_LPARS ]]
+        then
+                for E in $FETCH_LPARS
+                do
+                    timeout 1m sshpass -p "$LPARPASS" ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${LPARUSER}@${E} "echo sairam" > /dev/null
+                    if [[ $? -eq 0 ]]
+                    then
+                            timeout 2m sshpass -p "$LPARPASS" ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${LPARUSER}@${E} "hcl -status" > /dev/null
+                            if [[ $? -eq 255 ]]
+                            then
+                                    LPARS_CORRECT_PASSWORD=($E "${LPARS_CORRECT_PASSWORD[@]}")
+                            else
+                                    sshpass -p "$HMCPASS" ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${HMCUSER}@${HMC} "chsysstate -m $MACHINE -r lpar -o shutdown -n $E --immed --force" > /dev/null
+                            fi
+                    else
+                            sshpass -p "$HMCPASS" ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${HMCUSER}@${HMC} "chsysstate -m $MACHINE -r lpar -o shutdown -n $E --immed --force" > /dev/null
+                    fi
+                done
+        else
+                echo -e "Failure Analysis:- Could not able to get the LPARS information."
+                exit 1
+        fi
 else
         echo "Failure Analysis:- Command execution did not success."
         exit 1
