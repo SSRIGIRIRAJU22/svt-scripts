@@ -308,13 +308,7 @@ then
                     timeout 1m sshpass -p "$LPARPASS" ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${LPARUSER}@${E} "echo sairam" > /dev/null
                     if [[ $? -eq 0 ]]
                     then
-                            timeout 2m sshpass -p "$LPARPASS" ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${LPARUSER}@${E} "hcl -status" > /dev/null
-                            if [[ $? -eq 255 ]]
-                            then
-                                    LPARS_CORRECT_PASSWORD=($E "${LPARS_CORRECT_PASSWORD[@]}")
-                            else
-                                    sshpass -p "$HMCPASS" ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${HMCUSER}@${HMC} "chsysstate -m $MACHINE -r lpar -o shutdown -n $E --immed --force" > /dev/null
-                            fi
+                          LPARS_CORRECT_PASSWORD=($E "${LPARS_CORRECT_PASSWORD[@]}")
                     else
                             sshpass -p "$HMCPASS" ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${HMCUSER}@${HMC} "chsysstate -m $MACHINE -r lpar -o shutdown -n $E --immed --force" > /dev/null
                     fi
@@ -596,10 +590,8 @@ do
         sshpass -p "$LPARPASS" ssh -k -oLogLevel=quiet -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null ${LPARUSER}@${H} "hcl -run -mdt mdt.bu;htxcmdline -bootme on mode:hardf period:3" > /dev/null
         if [[ $? -eq 0 ]]
         then
-                #HB_LPARS=("${HB_LPARS[@]}" $H)
                 MyCount=$((MyCount+1))
         else
-                #shutdown_lpar ${MACHINE} ${H}
                 FHB_LPARS=("${FHB_LPARS[@]}" $H)
         fi
 done
