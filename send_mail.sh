@@ -24,7 +24,7 @@ usage () {
 }
 
 ##
-TEMP=`getopt -o "f:t:s:b:" --long help -n $0 -- "$@"` || {
+TEMP=`getopt -o "f:t:s:b:h" -n $0 -- "$@"` || {
         usage
         exit 1
 }
