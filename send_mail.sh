@@ -17,7 +17,7 @@ usage () {
         echo -e "\n${UNDERLINE}Usage:${EC}\n\t$0 -s <subject> -b <body> -f <from address> -t <to address> [-h help]\n"
         echo -e "${UNDERLINE}Supported Options:${EC}\n"
         echo -e "\t-f : From address"
-        echo -e "\t-t : To address"
+        echo -e "\t-t : To address\n\t\tTo send to multiple users, provide the mail address in comma separated"
         echo -e "\t-s : Subject of the mail"
         echo -e "\t-b : Mail body\n"
         echo -e "${UNDERLINE}Example(s):${EC}\n\n\t$0 -f abc@gmail.com -t henry@xyz.com -s 'Test mail' -b 'Hi, This is a test mail using mailx tool'\n"
