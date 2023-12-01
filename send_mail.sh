@@ -20,12 +20,7 @@ usage () {
         echo -e "\t-t : To address\n\t\tTo send to multiple users, provide the mail address in comma separated"
         echo -e "\t-s : Subject of the mail"
         echo -e "\t-b : Mail body\n"
-        echo -e "${UNDERLINE}Example(s):${EC}\n\n\t$0 -f abc@gmail.com -t henry@xyz.com -s 'Test mail' -b 'Hi, This is a test mail using mailx tool'\n"
-}
-
-ECHO () {
-
-        echo -e "$(date '+%Y%m%d%H%M%S'): $*"
+        echo -e "${UNDERLINE}Example(s):${EC}\n\n\t1)$0 -f mark@gmail.com -t henry@xyz.com -s 'Test mail' -b 'Hi, This is a test mail using mailx tool'\n\t2)$0 -f mark@gmail.com -t henry@xyz.com,joe@xyz.com -s 'Test mail' -b 'Hi, This is a test mail using mailx tool'\n"
 }
 
 ##
